@@ -1,0 +1,36 @@
+{
+  "name": "Connectivity: Bluetooth",
+  "type": "toggle",
+  "state": "draft",
+  "position_in_blueprints": "blueprints_connectivity",
+  "position_in_device_settings": "none",
+  "properties": {
+    "description": "Enable or disable Bluetooth.",
+    "info_message": "Best-effort: uses bluetoothctl or rfkill. Requires sudo/root on most systems. For field troubleshooting, use the Quick Settings 'Bluetooth Reset' action.",
+    "tooltip_message": "Bluetooth on/off"
+  },
+  "options": [
+    {
+      "label": "On",
+      "key": "AUTO_UUID",
+      "scripts": {
+        "linux": {
+          "interpreter": "bash",
+          "script_file": "script.sh",
+          "args": ["on"]
+        }
+      }
+    },
+    {
+      "label": "Off",
+      "key": "AUTO_UUID",
+      "scripts": {
+        "linux": {
+          "interpreter": "bash",
+          "script_file": "script.sh",
+          "args": ["off"]
+        }
+      }
+    }
+  ]
+}

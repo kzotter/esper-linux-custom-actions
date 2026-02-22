@@ -1,0 +1,25 @@
+{
+  "name": "Quick Fix: Restart Network Interface",
+  "type": "button",
+  "state": "draft",
+  "position_in_blueprints": "none",
+  "position_in_device_settings": "device_quick_settings",
+  "properties": {
+    "description": "Restart a specified network interface (e.g., eth0, wlan0).",
+    "info_message": "Pass IFACE to choose interface. Example: IFACE=wlan0. Requires sudo/root. Risk: restarting the active uplink may temporarily disconnect the device.",
+    "tooltip_message": "Restart interface"
+  },
+  "options": [
+    {
+      "label": "Restart",
+      "key": "AUTO_UUID",
+      "scripts": {
+        "linux": {
+          "interpreter": "bash",
+          "script_file": "script.sh",
+          "args": ["${IFACE}"]
+        }
+      }
+    }
+  ]
+}
