@@ -1,0 +1,61 @@
+# ==== General ====
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.temp
+
+# ==== Environment & Secrets ====
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+tenants*.json
+.esper_api_key
+local_settings.json
+secrets.json
+
+# ==== Python ====
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# ==== JavaScript / Node ====
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.next/
+out/
+
+# ==== Java / Kotlin / Android ====
+*.class
+*.jar
+*.war
+*.ear
+target/
+.gradle/
+local.properties
+
+# ==== IDEs ====
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ==== OS ====
+ehthumbs.db
+Desktop.ini
