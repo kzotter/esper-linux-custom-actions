@@ -2,7 +2,7 @@
   "name": "Quick Fix: Bluetooth Reset",
   "type": "button",
   "state": "draft",
-  "position_in_blueprints": null,
+  "position_in_blueprints": "none",
   "position_in_device_settings": "device_quick_settings",
   "properties": {
     "description": "Reset Bluetooth by cycling power off then on.",
