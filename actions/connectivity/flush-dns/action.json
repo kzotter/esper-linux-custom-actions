@@ -2,7 +2,7 @@
   "name": "Quick Fix: Flush DNS Cache",
   "type": "button",
   "state": "draft",
-  "position_in_blueprints": "none",
+  "position_in_blueprints": null,
   "position_in_device_settings": "device_quick_settings",
   "properties": {
     "description": "Flush local DNS cache if supported by the OS stack.",
