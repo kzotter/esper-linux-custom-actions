@@ -1,0 +1,24 @@
+{
+  "name": "Quick Fix: Bluetooth Reset",
+  "type": "button",
+  "state": "draft",
+  "position_in_blueprints": "none",
+  "position_in_device_settings": "device_quick_settings",
+  "properties": {
+    "description": "Reset Bluetooth by cycling power off then on.",
+    "info_message": "Useful when Bluetooth stack or peripherals get stuck. Requires sudo/root on most systems.",
+    "tooltip_message": "Bluetooth reset"
+  },
+  "options": [
+    {
+      "label": "Reset",
+      "key": "AUTO_UUID",
+      "scripts": {
+        "linux": {
+          "interpreter": "bash",
+          "script_file": "reset.sh"
+        }
+      }
+    }
+  ]
+}
