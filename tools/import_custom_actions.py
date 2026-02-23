@@ -118,30 +118,174 @@ def inline_manifest_scripts(manifest: Dict[str, Any], manifest_dir: Path) -> Non
         opt["scripts"] = scripts
 
 
-def is_uuid4(s: str) -> bool:
-    try:
-        u = uuid.UUID(str(s))
-        return u.version == 4
-    except Exception:
-        return False
-
-
-def ensure_option_keys(manifest: Dict[str, Any], strict: bool = False) -> None:
+def ensure_option_keys(manifest: Dict[str, Any]) -> None:
     options = manifest.get("options") or []
     for opt in options:
-        k = opt.get("key")
-
-        # If missing or explicitly AUTO_UUID -> generate new UUIDv4
-        if not k or k == "AUTO_UUID":
+        if opt.get("key") in (None, "", "AUTO_UUID"):
             opt["key"] = str(uuid.uuid4())
+
+
+def http_json(method: str, url: str, api_key: str, payload: Optional[Dict[str, Any]] = None) -> Tuple[int, Any]:
+    data = None
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Accept": "application/json",
+    }
+    if payload is not None:
+        data = json.dumps(payload).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+
+    req = urllib.request.Request(url=url, method=method, headers=headers, data=data)
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            raw = resp.read().decode("utf-8", errors="replace")
+            if not raw:
+                return resp.status, None
+            try:
+                return resp.status, json.loads(raw)
+            except Exception:
+                return resp.status, raw
+    except urllib.error.HTTPError as e:
+        raw = e.read().decode("utf-8", errors="replace")
+        return e.code, raw
+    except Exception as ex:
+        die(f"HTTP request failed: {ex}")
+
+
+def parse_results_list(resp: Any) -> List[Dict[str, Any]]:
+    """
+    Esper GET /v2/custom-actions/ returns:
+      { content: { count, next, previous, results: [...] }, message, code }
+    """
+    if not isinstance(resp, dict):
+        return []
+    content = resp.get("content")
+    if not isinstance(content, dict):
+        return []
+    results = content.get("results")
+    if isinstance(results, list):
+        return [r for r in results if isinstance(r, dict)]
+    return []
+
+
+def find_existing_action(base_url: str, api_key: str, name: str) -> Optional[Dict[str, Any]]:
+    # name filter is partial match, case-insensitive; we still enforce exact match locally.
+    q = urllib.parse.urlencode({"name": name, "limit": 50, "offset": 0})
+    url = f"{base_url}/v2/custom-actions/?{q}"
+
+    status, data = http_json("GET", url, api_key)
+    if status != 200:
+        # Most common reasons: wrong base path (/api missing) -> 404, or auth -> 401/403
+        return None
+
+    results = parse_results_list(data)
+    # Exact name match (case sensitive), fallback to case-insensitive exact match
+    exact = [r for r in results if r.get("name") == name]
+    if not exact:
+        exact = [r for r in results if isinstance(r.get("name"), str) and r.get("name").lower() == name.lower()]
+
+    if len(exact) > 1:
+        # Rare but possible if names differ only by case historically; pick the first but warn.
+        eprint(f"WARNING: multiple existing custom actions matched name '{name}'. Using the first id={exact[0].get('id')}.")
+    return exact[0] if exact else None
+
+
+def build_payload(manifest_path: Path) -> Dict[str, Any]:
+    manifest = load_json(manifest_path)
+
+    # defensive copies / normalization
+    ensure_option_keys(manifest)
+    inline_manifest_scripts(manifest, manifest_path.parent)
+
+    # Remove any repo-only fields if they slipped in
+    # (We already popped script_file/args above; this is just belt-and-suspenders.)
+    return manifest
+
+
+def iter_manifests(root: Path) -> List[Path]:
+    return sorted(root.rglob("action*.json"))
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description="Import Esper Linux Custom Actions from action.json manifests.")
+    ap.add_argument("--tenant", default=os.getenv("ESPER_TENANT"), help="Esper tenant name (env: ESPER_TENANT)")
+    ap.add_argument("--api-key", default=os.getenv("ESPER_API_KEY"), help="Esper API key (env: ESPER_API_KEY)")
+    ap.add_argument("--root", default="actions", help="Root folder containing action manifests (default: actions)")
+    ap.add_argument("--only", default=None, help="Limit to a subpath under root, e.g. connectivity")
+    ap.add_argument("--apply", action="store_true", help="Perform writes (POST/PUT). Default is dry-run.")
+    ap.add_argument("--print-payloads", action="store_true", help="Print full payload JSON (dry-run only recommended).")
+    args = ap.parse_args()
+
+    if not args.tenant:
+        die("Missing tenant. Provide --tenant or set ESPER_TENANT.")
+    if not args.api_key:
+        die("Missing API key. Provide --api-key or set ESPER_API_KEY.")
+
+    base_url = f"https://{args.tenant}-api.esper.cloud/api"  # guardrail: always include /api
+    root = Path(args.root).resolve()
+    if not root.exists():
+        die(f"Root path not found: {root}")
+
+    scope = root
+    if args.only:
+        scope = (root / args.only).resolve()
+        if not scope.exists():
+            die(f"--only path not found: {scope}")
+
+    manifests = iter_manifests(scope)
+    if not manifests:
+        die(f"No action manifests found under: {scope}")
+
+    mode = "APPLY" if args.apply else "DRY-RUN"
+    print(f"[{mode}] Base URL: {base_url}")
+    print(f"[{mode}] Manifests found: {len(manifests)} under {scope}")
+
+    created = 0
+    updated = 0
+    skipped = 0
+
+    for mp in manifests:
+        payload = build_payload(mp)
+        name = payload.get("name")
+        if not isinstance(name, str) or not name.strip():
+            eprint(f"SKIP {mp}: missing required field 'name'")
+            skipped += 1
             continue
 
-        # If present but not UUIDv4 -> fix or fail
-        if not is_uuid4(str(k)):
-            msg = f"Option key must be UUIDv4. Got '{k}'."
-            if strict:
-                die(msg)
-            else:
-                eprint(f"WARNING: {msg} Replacing with new UUIDv4.")
-                opt["key"] = str(uuid.uuid4())
+        existing = find_existing_action(base_url, args.api_key, name)
+        if existing and existing.get("id"):
+            action_id = existing["id"]
+            print(f"[{mode}] UPDATE: {name} (id={action_id}) from {mp}")
+            if args.print_payloads:
+                print(save_pretty(payload))
+            if args.apply:
+                url = f"{base_url}/v2/custom-actions/{urllib.parse.quote(str(action_id))}/"
+                status, resp = http_json("PUT", url, args.api_key, payload)
+                if status not in (200, 201):
+                    eprint(f"  -> ERROR {status}: {resp}")
+                else:
+                    print(f"  -> OK {status}")
+                    updated += 1
+        else:
+            print(f"[{mode}] CREATE: {name} from {mp}")
+            if args.print_payloads:
+                print(save_pretty(payload))
+            if args.apply:
+                url = f"{base_url}/v2/custom-actions/"
+                status, resp = http_json("POST", url, args.api_key, payload)
+                if status not in (200, 201):
+                    eprint(f"  -> ERROR {status}: {resp}")
+                else:
+                    cid = None
+                    if isinstance(resp, dict):
+                        content = resp.get("content")
+                        if isinstance(content, dict):
+                            cid = content.get("id")
+                    print(f"  -> OK {status}" + (f" (id={cid})" if cid else ""))
+                    created += 1
 
+    print(f"[{mode}] Done. Created={created}, Updated={updated}, Skipped={skipped}")
+
+
+if __name__ == "__main__":
+    main()
