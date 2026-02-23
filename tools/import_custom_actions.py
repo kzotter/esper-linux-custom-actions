@@ -131,12 +131,12 @@ def ensure_option_keys(manifest: Dict[str, Any], strict: bool = False) -> None:
     for opt in options:
         k = opt.get("key")
 
-        # If missing or explicitly AUTO_UUID → generate new UUIDv4
+        # If missing or explicitly AUTO_UUID -> generate new UUIDv4
         if not k or k == "AUTO_UUID":
             opt["key"] = str(uuid.uuid4())
             continue
 
-        # If present but not UUIDv4 → fix or fail
+        # If present but not UUIDv4 -> fix or fail
         if not is_uuid4(str(k)):
             msg = f"Option key must be UUIDv4. Got '{k}'."
             if strict:
