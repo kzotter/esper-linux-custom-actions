@@ -3,7 +3,7 @@
   "type": "toggle",
   "state": "draft",
   "position_in_blueprints": "blueprints_connectivity",
-  "position_in_device_settings": "none",
+  "position_in_device_settings": null,
   "properties": {
     "description": "Enable or disable Wi-Fi.",
     "info_message": "Blueprint-only by design. Turning off Wi-Fi in Quick Settings can strand the device from Esper if Wi-Fi is the only uplink. Best-effort: uses NetworkManager or rfkill when available. Requires sudo/root on most systems.",
@@ -17,7 +17,9 @@
         "linux": {
           "interpreter": "bash",
           "script_file": "script.sh",
-          "args": ["on"]
+          "args": [
+            "on"
+          ]
         }
       }
     },
@@ -28,7 +30,9 @@
         "linux": {
           "interpreter": "bash",
           "script_file": "script.sh",
-          "args": ["off"]
+          "args": [
+            "off"
+          ]
         }
       }
     }

@@ -3,7 +3,7 @@
   "type": "toggle",
   "state": "draft",
   "position_in_blueprints": "blueprints_connectivity",
-  "position_in_device_settings": "none",
+  "position_in_device_settings": null,
   "properties": {
     "description": "Enable or disable Bluetooth.",
     "info_message": "Best-effort: uses bluetoothctl or rfkill. Requires sudo/root on most systems. For field troubleshooting, use the Quick Settings 'Bluetooth Reset' action.",
@@ -17,7 +17,9 @@
         "linux": {
           "interpreter": "bash",
           "script_file": "script.sh",
-          "args": ["on"]
+          "args": [
+            "on"
+          ]
         }
       }
     },
@@ -28,7 +30,9 @@
         "linux": {
           "interpreter": "bash",
           "script_file": "script.sh",
-          "args": ["off"]
+          "args": [
+            "off"
+          ]
         }
       }
     }
