@@ -202,6 +202,11 @@ def build_payload(manifest_path: Path) -> Dict[str, Any]:
     return manifest
 
 
+
+    # Normalize placement fields: omit keys when unused (None)
+    for k in ("position_in_blueprints", "position_in_device_settings"):
+        if k in manifest and manifest.get(k) is None:
+            del manifest[k]
 def iter_manifests(root: Path) -> List[Path]:
     return sorted(root.rglob("action*.json"))
 
