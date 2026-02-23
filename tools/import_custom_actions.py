@@ -265,11 +265,6 @@ def main() -> None:
                 print(save_pretty(payload))
             if args.apply:
                 url = f"{base_url}/v2/custom-actions/{urllib.parse.quote(str(action_id))}/"
-                # Final payload cleanup: omit unused placement fields (API rejects null)
-                for k in ("position_in_blueprints", "position_in_device_settings"):
-                    if payload.get(k) is None:
-                        payload.pop(k, None)
-                status, resp = http_json("PUT", url, args.api_key, payload)
                 if status not in (200, 201):
                     eprint(f"  -> ERROR {status}: {resp}")
                 else:
@@ -281,11 +276,6 @@ def main() -> None:
                 print(save_pretty(payload))
             if args.apply:
                 url = f"{base_url}/v2/custom-actions/"
-                # Final payload cleanup: omit unused placement fields (API rejects null)
-                for k in ("position_in_blueprints", "position_in_device_settings"):
-                    if payload.get(k) is None:
-                        payload.pop(k, None)
-                status, resp = http_json("POST", url, args.api_key, payload)
                 if status not in (200, 201):
                     eprint(f"  -> ERROR {status}: {resp}")
                 else:
